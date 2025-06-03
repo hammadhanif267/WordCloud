@@ -5,15 +5,18 @@ from wordcloud import WordCloud, STOPWORDS
 import matplotlib.pyplot as plt
 import PyPDF2
 from docx import Document
+import plotly.express as px
 import base64
 from io import BytesIO
 
 # Functions for file reading
 def read_txt(file):
     return file.getvalue().decode("utf-8")
+
 def read_docx(file):
     doc = Document(file)
     return " ".join([para.text for para in doc.paragraphs])
+
 def read_pdf(file):
     pdf = PyPDF2.PdfReader(file)
     return " ".join([page.extract_text() for page in pdf.pages])
@@ -36,7 +39,7 @@ def get_table_download_link(df, filename, file_label):
     b64 = base64.b64encode(csv.encode()).decode()
     return f'<a href="data:file/csv;base64,{b64}" download="{filename}">{file_label}</a>'
 
-# Streamlit code
+# --- Streamlit UI ---
 st.title("Word Cloud Generator")
 st.subheader("📁 Upload a PDF, DOCX, or TXT file to generate a word cloud")
 
@@ -44,35 +47,35 @@ st.subheader("📁 Upload a PDF, DOCX, or TXT file to generate a word cloud")
 st.markdown("""
 <style>
     body {
-        background-color: #f0f4f8;  /* Soft light blue background */
-        color: #333;  /* Dark text color for readability */
+        background-color: #f0f4f8;
+        color: #333;
     }
     .stButton > button {
-        background-color: #6c63ff; 
-        color: white; 
-        padding: 10px 20px; 
-        border: none; 
+        background-color: #6c63ff;
+        color: white;
+        padding: 10px 20px;
+        border: none;
         border-radius: 5px;
         cursor: pointer;
         transition: transform 0.2s, background-color 0.2s;
     }
     .stButton > button:hover {
         transform: scale(1.05);
-        background-color: #5a54e1;  /* Darker shade on hover */
+        background-color: #5a54e1;
     }
     .stTextInput, .stSelectbox, .stMultiSelect {
-        background-color: #ffffff; 
-        border: 1px solid #ccc; 
+        background-color: #ffffff;
+        border: 1px solid #ccc;
         border-radius: 5px;
     }
     .stMarkdown {
         margin: 10px 0;
     }
     .stFileUploader {
-        border: 2px dashed #6c63ff; 
+        border: 2px dashed #6c63ff;
         border-radius: 10px;
         padding: 20px;
-        background-color: #ffffff; 
+        background-color: #ffffff;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -88,7 +91,7 @@ if uploaded_file:
     }
     st.write(file_details)
 
-    # Check the file type and read the file
+    # Detect file type and extract text
     if uploaded_file.type == "text/plain":
         text = read_txt(uploaded_file)
     elif uploaded_file.type == "application/pdf":
@@ -99,57 +102,61 @@ if uploaded_file:
         st.error("File type not supported. Please upload a TXT, PDF, or DOCX file.")
         st.stop()
 
-    # Generate word count table
+    # Initial word count
     words = text.split()
     word_count = pd.DataFrame({'Word': words}).groupby('Word').size().reset_index(name='Count').sort_values('Count', ascending=False)
 
-    # Sidebar: Checkbox and Multiselect box for stopwords
+    # Sidebar: Stopwords settings
     use_standard_stopwords = st.sidebar.checkbox("Use standard stopwords?", True)
     top_words = word_count['Word'].head(50).tolist()
     additional_stopwords = st.sidebar.multiselect("Additional stopwords:", sorted(top_words))
 
-    if use_standard_stopwords:
-        all_stopwords = STOPWORDS.union(set(additional_stopwords))
-    else:
-        all_stopwords = set(additional_stopwords)
-
+    all_stopwords = STOPWORDS.union(set(additional_stopwords)) if use_standard_stopwords else set(additional_stopwords)
     text = filter_stopwords(text, all_stopwords)
 
     if text:
-        # Word Cloud dimensions
+        # Word Cloud size
         width = st.sidebar.slider("Select Word Cloud Width", 400, 2000, 1200, 50)
         height = st.sidebar.slider("Select Word Cloud Height", 200, 2000, 800, 50)
 
-        # Generate wordcloud
+        # Generate and show Word Cloud
         st.subheader("Generated Word Cloud")
-        fig, ax = plt.subplots(figsize=(width / 100, height / 100))  # Convert pixels to inches for figsize
-        wordcloud_img = WordCloud(width=width, height=height, background_color='white', max_words=200, contour_width=3, contour_color='steelblue').generate(text)
+        fig, ax = plt.subplots(figsize=(width / 100, height / 100))
+        wordcloud_img = WordCloud(width=width, height=height, background_color='white',
+                                  max_words=200, contour_width=3, contour_color='steelblue').generate(text)
         ax.imshow(wordcloud_img, interpolation='bilinear')
         ax.axis('off')
+        st.pyplot(fig)
 
-        # Save plot functionality
+        # Save plot
         format_ = st.selectbox("Select file format to save the plot", ["png", "jpeg", "svg", "pdf"])
         resolution = st.slider("Select Resolution", 100, 500, 300, 50)
-
-        # Word Count Table
-        st.subheader("Word Count Table")
-        st.write(word_count)
-
-        st.pyplot(fig)
         if st.button(f"Save as {format_}"):
             buffered = BytesIO()
             plt.savefig(buffered, format=format_, dpi=resolution)
             st.markdown(get_image_download_link(buffered, format_), unsafe_allow_html=True)
 
-    # Sidebar author info
+        # Word Count Table
+        st.subheader("Word Count Table")
+        words_filtered = text.split()
+        word_count_filtered = pd.DataFrame({'Word': words_filtered}).groupby('Word').size().reset_index(name='Count').sort_values('Count', ascending=False)
+        st.write(word_count_filtered)
+
+        if st.button('Download Word Count Table as CSV'):
+            st.markdown(get_table_download_link(word_count_filtered, "word_count.csv", "Click Here to Download"), unsafe_allow_html=True)
+
+    # Sidebar Info
     st.sidebar.markdown("---")
-    st.sidebar.markdown("**Created by**:<br><i class='fab fa-github'></i> <a href='https://github.com/hammadhanif267' target='_blank'>Hammad Hanif</a>", unsafe_allow_html=True)
+    st.sidebar.subheader("📺 Learn Data Science in Urdu/Hindi")
+    st.sidebar.video("https://youtu.be/omk5b1m2h38")
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("Created by: [Dr. Muhammad Aammar Tufail](https://github.com/AammarTufail)")
+    st.sidebar.markdown("Contact: [Email](mailto:aammar@codanics.com)")
+
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("**Also visit**:<br><i class='fab fa-github'></i> <a href='https://github.com/hammadhanif267' target='_blank'>Hammad Hanif</a>", unsafe_allow_html=True)
     st.sidebar.markdown(
         '<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">',
         unsafe_allow_html=True
     )
-    st.sidebar.markdown("**Contact me**:<br><i class='fas fa-envelope'></i> <a href='mailto:hamadhanif267@gmail.com' target='_blank'>hamadhanif267@gmail.com</a>", unsafe_allow_html=True)
-
-    # Provide download link for table
-    if st.button('Download Word Count Table as CSV'):
-        st.markdown(get_table_download_link(word_count, "word_count.csv", "Click Here to Download"), unsafe_allow_html=True)
+    st.sidebar.markdown("Contact: <a href='mailto:hamadhanif267@gmail.com' target='_blank'>hamadhanif267@gmail.com</a>", unsafe_allow_html=True)
