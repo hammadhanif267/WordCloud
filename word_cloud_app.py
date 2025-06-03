@@ -147,16 +147,12 @@ if uploaded_file:
 
     # Sidebar Info
     st.sidebar.markdown("---")
-    st.sidebar.subheader("📺 Learn Data Science in Urdu/Hindi")
-    st.sidebar.video("https://youtu.be/omk5b1m2h38")
-    st.sidebar.markdown("---")
-    st.sidebar.markdown("Created by: [Dr. Muhammad Aammar Tufail](https://github.com/AammarTufail)")
-    st.sidebar.markdown("Contact: [Email](mailto:aammar@codanics.com)")
-
-    st.sidebar.markdown("---")
-    st.sidebar.markdown("**Also visit**:<br><i class='fab fa-github'></i> <a href='https://github.com/hammadhanif267' target='_blank'>Hammad Hanif</a>", unsafe_allow_html=True)
+    st.sidebar.markdown("**Created By**:<br><i class='fab fa-github'></i> <a href='https://github.com/hammadhanif267' target='_blank'>Hammad Hanif</a>", unsafe_allow_html=True)
     st.sidebar.markdown(
         '<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">',
         unsafe_allow_html=True
     )
-    st.sidebar.markdown("Contact: <a href='mailto:hamadhanif267@gmail.com' target='_blank'>hamadhanif267@gmail.com</a>", unsafe_allow_html=True)
+    st.sidebar.markdown(
+        "<i class='fas fa-envelope'></i> <b>Contact Me</b>: <a href='mailto:hamadhanif267@gmail.com' target='_blank'>hamadhanif267@gmail.com</a>",
+        unsafe_allow_html=True
+    )
